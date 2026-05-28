@@ -7,115 +7,124 @@
 // ESTRUTURAS
 
 typedef struct treeNode{
-	char valor[15];
-	struct treeNode *left;
-	struct treeNode *right;
+    char valor[15];
+    struct treeNode *left;
+    struct treeNode *right;
 }treeNode;
 
-// Lista usada para guardar as árvores das expressões
+// Lista usada para guardar as arvores das expressoes
 typedef struct listNode{
-	treeNode *root;
-	struct listNode *next;
+    treeNode *root;
+    struct listNode *next;
 } listNode;
 
-// PROTÓTIPOS
-// Funções de manipulação dos dados
+// PROTOTIPOS
+// Funcoes de manipulacao dos dados
 void infixToPosfix(char *infix, char *posfix);
 treeNode* buildPosfixTree(char *posfix);
 int getPrecedence(char *op);
 treeNode* createNode(char *value);
 
-// Funções de avaliação
+// Funcoes de avaliacao
 double avaliateTree(treeNode *root);
 int isOperator(char *token);
 
-// Funções para exibição
+// Funcoes para exibicao
 void printInOrder(treeNode *root);
 void printTreeVisual(treeNode *root, int space);
 void freeTree(treeNode *root);
 void freeList(listNode *top);
 
-int main(void){
-	int choice = 0;
-	char bufferInfix[500];
-	listNode *topList = NULL;
-	listNode *endList = NULL;
-	
-	while (1){
-		printf("\n MENU \n");
-		printf("1 - Adicionar uma nova expressao\n");
-		printf("2 - Mostrar estruturas das arvores\n");
-		printf("3 - Encerrar o programa\n");
-		printf("Escolha uma das opcoes: ");
-		scanf("%d", &choice);	
-		while(getchar() != '\n'); 
+// Novas funcoes para exportacao Graphviz
+void exportar_dot_recursivo(treeNode* raiz, FILE* arquivo);
+void gerar_arquivo_graphviz(treeNode* raiz, int indice);
 
-		switch(choice){
-			case 1:
-				printf("Digite a expressao: ");
-				fgets(bufferInfix, sizeof(bufferInfix), stdin);
-				bufferInfix[strcspn(bufferInfix, "\n")] = '\0';
-				
-				char posfix[500] = "";
-				infixToPosfix(bufferInfix, posfix);
-				treeNode *root = buildPosfixTree(posfix);
-				listNode *newNode = (listNode*)malloc(sizeof(listNode));
-				newNode->root = root;
-				newNode->next = NULL;
-				
-				if (topList == NULL) {
-					topList = newNode;
-					endList = newNode;
-				} else {
-					endList->next = newNode;
-					endList = newNode;
-				}
-				
-				printf("[OK] Expressao adicionada com sucesso\n");
-				break;
-			
-			case 2:
-				if (topList == NULL) {
-					printf("Nenhuma expressao foi adicionada ainda.\n");
-				} else {
-					printf("\nEXPRESSOES\n");
-					listNode *actual = topList;
-					int counter = 1;
-					while (actual != NULL){
-						printf("--------------------------------------------------\n");
-						printf("Expressao %d: \n", counter++);
-						
-						printf("\nEstrutura da Arvore:\n");
-						printTreeVisual(actual->root, 0);
-						
-						printf("\n\nNotacao Infixa: ");
-						printInOrder(actual->root);
-						
-						printf("\nResultado: %.2f\n", avaliateTree(actual->root));
-						printf("--------------------------------------------------\n");
-						
-						actual = actual->next;
-					}
-				}
-				break;
-				
-			case 3:
-				freeList(topList);
-				return 0;
-				
-			default:
-				printf("Escolha uma opcao valida!\n");	
-		}
-	}
-	return 0;
+int main(void){
+    int choice = 0;
+    char bufferInfix[500];
+    listNode *topList = NULL;
+    listNode *endList = NULL;
+    
+    while (1){
+        printf("\n MENU \n");
+        printf("1 - Adicionar uma nova expressao\n");
+        printf("2 - Mostrar estruturas das arvores e exportar Graphviz\n");
+        printf("3 - Encerrar o programa\n");
+        printf("Escolha uma das opcoes: ");
+        scanf("%d", &choice);   
+        while(getchar() != '\n'); 
+
+        switch(choice){
+            case 1:
+                printf("Digite a expressao: ");
+                fgets(bufferInfix, sizeof(bufferInfix), stdin);
+                bufferInfix[strcspn(bufferInfix, "\n")] = '\0';
+                
+                char posfix[500] = "";
+                infixToPosfix(bufferInfix, posfix);
+                treeNode *root = buildPosfixTree(posfix);
+                listNode *newNode = (listNode*)malloc(sizeof(listNode));
+                newNode->root = root;
+                newNode->next = NULL;
+                
+                if (topList == NULL) {
+                    topList = newNode;
+                    endList = newNode;
+                } else {
+                    endList->next = newNode;
+                    endList = newNode;
+                }
+                
+                printf("[OK] Expressao adicionada com sucesso\n");
+                break;
+            
+            case 2:
+                if (topList == NULL) {
+                    printf("Nenhuma expressao foi adicionada ainda.\n");
+                } else {
+                    printf("\nEXPRESSOES\n");
+                    listNode *actual = topList;
+                    int counter = 1;
+                    while (actual != NULL){
+                        printf("--------------------------------------------------\n");
+                        printf("Expressao %d: \n", counter);
+                        
+                        printf("\nEstrutura da Arvore:\n");
+                        printTreeVisual(actual->root, 0);
+                        
+                        printf("\n\nNotacao Infixa: ");
+                        printInOrder(actual->root);
+                        
+                        printf("\nResultado: %.2f\n", avaliateTree(actual->root));
+                        
+                     //quando vc mostrar a arvore da forma padrÃ£o sera gerado  o arquivo.dot
+                        gerar_arquivo_graphviz(actual->root, counter);
+                        
+                        printf("--------------------------------------------------\n");
+                        
+                        actual = actual->next;
+                        counter++;
+                    }
+                }
+                break;
+                
+            case 3:
+                freeList(topList);
+                return 0;
+                
+            default:
+                printf("Escolha uma opcao valida!\n");  
+        }
+    }
+    return 0;
 }
 
 treeNode* createNode(char *nodeValue){
-	treeNode* new = (treeNode*)malloc(sizeof(treeNode));
-	strcpy(new->valor, nodeValue);
-	new->left = NULL;
-	new->right = NULL;
-	return new;
+    treeNode* new = (treeNode*)malloc(sizeof(treeNode));
+    strcpy(new->valor, nodeValue);
+    new->left = NULL;
+    new->right = NULL;
+    return new;
 }
 
 int getPrecedence(char *op) {
@@ -127,105 +136,105 @@ int getPrecedence(char *op) {
 }
 
 void infixToPosfix(char *infix, char *posfix){
-	char pileOp[100][15];
-	int topOp = -1;
-	int i = 0;
-	int isUnary = 1;
-	char number[15];
-	
-	posfix[0] = '\0';
-	
-	while(infix[i] != '\0'){
-		if(isspace(infix[i])){
-			i++;
-			continue;
-		}
-		
-		if (isdigit(infix[i])){
-			int k = 0;
-			while (isdigit(infix[i]) || infix[i] == '.'){
-				number[k++] = infix[i++];
-			}
-			number[k] = '\0';
-			strcat(posfix, number);
-			strcat(posfix, " ");
-			isUnary = 0;
-			continue;
-		}
-		
-		if (strncmp(&infix[i], "sqrt", 4) == 0){
-			strcpy(pileOp[++topOp], "sqrt");
-			i = i + 4;
-			isUnary = 0;
-			continue;
-		}
-		
-		if (infix[i] == '('){
-			strcpy(pileOp[++topOp], "(");
-			isUnary = 1;
-		} else if (infix[i] == ')'){
-			while(topOp >= 0 && strcmp(pileOp[topOp], "(") != 0){
-				strcat(posfix, pileOp[topOp--]);
-				strcat(posfix, " ");
-			}
-			if (topOp >= 0){
-				topOp--;
-				isUnary = 0;
-			}
-		} else {
-			char opStr[2] = {infix[i], '\0'};
-			
-			if (infix[i] == '-' && isUnary){
-				strcpy(opStr, "~");
-			}
-			
-			while (topOp >= 0 && strcmp(pileOp[topOp], "(") != 0 && 
-			getPrecedence(pileOp[topOp]) >= getPrecedence(opStr)){
-				strcat(posfix, pileOp[topOp--]);
-				strcat(posfix, " ");
-			} 
-			strcpy(pileOp[++topOp], opStr);
-			isUnary = 1;
-		}
-		i++;
-	}
-	
-	while(topOp >= 0){
-		strcat(posfix, pileOp[topOp--]);
-		strcat(posfix, " ");
-	}
+    char pileOp[100][15];
+    int topOp = -1;
+    int i = 0;
+    int isUnary = 1;
+    char number[15];
+    
+    posfix[0] = '\0';
+    
+    while(infix[i] != '\0'){
+        if(isspace(infix[i])){
+            i++;
+            continue;
+        }
+        
+        if (isdigit(infix[i])){
+            int k = 0;
+            while (isdigit(infix[i]) || infix[i] == '.'){
+                number[k++] = infix[i++];
+            }
+            number[k] = '\0';
+            strcat(posfix, number);
+            strcat(posfix, " ");
+            isUnary = 0;
+            continue;
+        }
+        
+        if (strncmp(&infix[i], "sqrt", 4) == 0){
+            strcpy(pileOp[++topOp], "sqrt");
+            i = i + 4;
+            isUnary = 0;
+            continue;
+        }
+        
+        if (infix[i] == '('){
+            strcpy(pileOp[++topOp], "(");
+            isUnary = 1;
+        } else if (infix[i] == ')'){
+            while(topOp >= 0 && strcmp(pileOp[topOp], "(") != 0){
+                strcat(posfix, pileOp[topOp--]);
+                strcat(posfix, " ");
+            }
+            if (topOp >= 0){
+                topOp--;
+                isUnary = 0;
+            }
+        } else {
+            char opStr[2] = {infix[i], '\0'};
+            
+            if (infix[i] == '-' && isUnary){
+                strcpy(opStr, "~");
+            }
+            
+            while (topOp >= 0 && strcmp(pileOp[topOp], "(") != 0 && 
+            getPrecedence(pileOp[topOp]) >= getPrecedence(opStr)){
+                strcat(posfix, pileOp[topOp--]);
+                strcat(posfix, " ");
+            } 
+            strcpy(pileOp[++topOp], opStr);
+            isUnary = 1;
+        }
+        i++;
+    }
+    
+    while(topOp >= 0){
+        strcat(posfix, pileOp[topOp--]);
+        strcat(posfix, " ");
+    }
 }
 
 treeNode* buildPosfixTree(char *posfix){
-	treeNode* nodePile[100];
-	int nodeTop = -1;
-	
-	char copy[500];
-	strcpy(copy, posfix);
-	
-	char *token = strtok(copy, " ");
-	
-	while (token != NULL){
-		if(strcmp(token, "+") == 0 || strcmp(token, "-") == 0 ||
-		strcmp(token, "*") == 0 || strcmp(token, "/") == 0 ||
-		strcmp(token,"^") == 0 || strcmp(token,"$") == 0){
-			treeNode* new = createNode(token);
-			new->right = nodePile[nodeTop--];
-			new->left = nodePile[nodeTop--];
-			nodePile[++nodeTop] = new;
-		} else if (strcmp(token, "sqrt") == 0 || strcmp(token, "~") == 0){
-			treeNode* new = createNode(token);
-			new->left = nodePile[nodeTop--];
-			nodePile[++nodeTop] = new;
-		} else {
-			treeNode* new = createNode(token);
-			nodePile[++nodeTop] = new;
-		}
-		
-		token = strtok(NULL, " ");
-	}
-	
-	return nodeTop >= 0 ? nodePile[nodeTop] : NULL;
+    treeNode* nodePile[100];
+    int nodeTop = -1;
+    
+    char copy[500];
+    strcpy(copy, posfix);
+    
+    char *token = strtok(copy, " ");
+    
+    while (token != NULL){
+        if(strcmp(token, "+") == 0 || strcmp(token, "-") == 0 ||
+        strcmp(token, "*") == 0 || strcmp(token, "/") == 0 ||
+        strcmp(token,"^") == 0 || strcmp(token,"$") == 0){
+            treeNode* new = createNode(token);
+            new->right = nodePile[nodeTop--];
+            new->left = nodePile[nodeTop--];
+            nodePile[++nodeTop] = new;
+        } else if (strcmp(token, "sqrt") == 0 || strcmp(token, "~") == 0){
+            treeNode* new = createNode(token);
+            new->left = nodePile[nodeTop--];
+            nodePile[++nodeTop] = new;
+        } else {
+            treeNode* new = createNode(token);
+            nodePile[++nodeTop] = new;
+        }
+        
+        token = strtok(NULL, " ");
+    }
+    
+    return nodeTop >= 0 ? nodePile[nodeTop] : NULL;
 }
 
 int isOperator(char *token) {
@@ -283,8 +292,8 @@ void printInOrder(treeNode *root) {
 }
 
 void printTreeVisual(treeNode *root, int space) {
-	int i = 0;
-	
+    int i = 0;
+    
     if (root == NULL) return;
     
     space += 6;
@@ -316,4 +325,37 @@ void freeList(listNode *top) {
         freeTree(temp->root);
         free(temp);
     }
+}
+
+void exportar_dot_recursivo(treeNode* raiz, FILE* arquivo) {
+    if (raiz == NULL) return;
+
+    fprintf(arquivo, "  \"%p\" [label=\"%s\"];\n", (void*)raiz, raiz->valor);
+
+    if (raiz->left != NULL) {
+        fprintf(arquivo, "  \"%p\" -> \"%p\";\n", (void*)raiz, (void*)raiz->left);
+        exportar_dot_recursivo(raiz->left, arquivo);
+    }
+    if (raiz->right != NULL) {
+        fprintf(arquivo, "  \"%p\" -> \"%p\";\n", (void*)raiz, (void*)raiz->right);
+        exportar_dot_recursivo(raiz->right, arquivo);
+    }
+}
+// coloquei a parte gera  o arquivo.dot tbm
+void gerar_arquivo_graphviz(treeNode* raiz, int indice) {
+    char nome_arquivo[64];
+    sprintf(nome_arquivo, "arvore_%d.dot", indice);
+    
+    FILE* arquivo = fopen(nome_arquivo, "w");
+    if (arquivo == NULL) {
+        printf("Falha ao criar o arquivo %s\n", nome_arquivo);
+        return;
+    }
+    
+    fprintf(arquivo, "digraph ArvoreExpressao {\n");
+    fprintf(arquivo, "  node [shape=circle, fontname=\"Helvetica\"];\n");
+    exportar_dot_recursivo(raiz, arquivo);
+    fprintf(arquivo, "}\n");
+    
+    fclose(arquivo);
 }
